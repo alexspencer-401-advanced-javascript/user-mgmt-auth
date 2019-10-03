@@ -84,4 +84,39 @@ describe('Movie App', () => {
         });
     });
   });
+
+  it('updates a movie', () => {
+    return postMovie(movie)
+      .then(movie => {
+        return request
+          .put(`/api/movies/${movie._id}`)
+          .set('Authorization', user.token)
+          .send({ yearReleased: 2019 })
+          .expect(200)
+          .then(({ body }) => {
+            expect(body.yearReleased).toBe(2019);
+            expect(body.owner).toBe(user._id);
+          });
+      });
+  });
+
+  it('deletes a movie', () => {
+    return postMovie(movie)
+      .then(movie => {
+        return request
+          .delete(`/api/movies/${movie._id}`)
+          .set('Authorization', user.token)
+          .expect(200)
+          .then(() => {
+            return request
+              .get('/api/movies')
+              .set('Authorization', user.token)
+              .expect(200)
+              .then(({ body }) => {
+                expect(body.length).toBe(0);
+              });
+          });
+      });
+  });
+
 });
