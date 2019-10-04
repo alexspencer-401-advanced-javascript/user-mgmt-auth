@@ -5,7 +5,6 @@ const { signupUser } = require('../data-helpers');
 const User = require('../../lib/models/user');
 
 describe('Auth API', () => {
-
   beforeEach(() => dropCollection('users'));
 
   const testUser = {
@@ -16,8 +15,7 @@ describe('Auth API', () => {
   let user = null;
 
   beforeEach(() => {
-    return signupUser(testUser)
-      .then(newUser => user = newUser);
+    return signupUser(testUser).then(newUser => (user = newUser));
   });
 
   it('signs up a user', () => {
@@ -46,10 +44,18 @@ describe('Auth API', () => {
     });
   }
 
-  testEmailAndPasswordRequired('signup', 'email', { password: 'I no like emails' });
-  testEmailAndPasswordRequired('signup', 'password', { email: 'no@password.com' });
-  testEmailAndPasswordRequired('signin', 'email', { password: 'I no like emails' });
-  testEmailAndPasswordRequired('signin', 'password', { email: 'no@password.com' });
+  testEmailAndPasswordRequired('signup', 'email', {
+    password: 'I no like emails'
+  });
+  testEmailAndPasswordRequired('signup', 'password', {
+    email: 'no@password.com'
+  });
+  testEmailAndPasswordRequired('signin', 'email', {
+    password: 'I no like emails'
+  });
+  testEmailAndPasswordRequired('signin', 'password', {
+    email: 'no@password.com'
+  });
 
   it('signs in a user', () => {
     return request
@@ -96,11 +102,9 @@ describe('Auth API', () => {
       .set('Authorization', jwt.sign({ foo: 'bar' }, 'shhhhh'))
       .expect(401);
   });
-
 });
 
 describe('Auth Admin Users', () => {
-
   const adminTest = {
     email: 'alex@hellohello.com',
     password: 'abc123'
@@ -122,27 +126,51 @@ describe('Auth Admin Users', () => {
   it('allows admin to make changes to users', () => {
     return signupUser(adminTest)
       .then(user => {
-        return User.updateById(user._id,
-          {
-            $addToSet: {
-              roles: 'admin'
-            }
+        return User.updateById(user._id, {
+          $addToSet: {
+            roles: 'admin'
           }
-        );
+        });
       })
       .then(() => {
-        return Promise.all([
-          signinAdminUser(),
-          signupUser(louslyOlUser)
-        ])
-          .then(([adminUser, user]) => {
-            console.log(adminUser, user);
+        return Promise.all([signinAdminUser(), signupUser(louslyOlUser)]).then(
+          ([adminUser, user]) => {
             return request
               .put(`/api/auth/users/${user._id}/roles/admin`)
               .set('Authorization', adminUser.token)
               .expect(200)
               .then(({ body }) => {
-                console.log(body);
+                expect(body.roles[0]).toBe('admin');
+              });
+          }
+        );
+      });
+  });
+
+  const newUser = {
+    email: 'ihopethis@works.com',
+    password: 'abc123'
+  };
+
+  it('allows admin to take away user admin status', () => {
+    return Promise.all([
+      signinAdminUser(),
+      signupUser(newUser)
+    ])
+      .then(([adminUser, newUser]) => {
+        console.log(adminUser, newUser);
+        return request
+          .put(`/api/auth/users/${newUser._id}/roles/admin`)
+          .set('Authorization', adminUser.token)
+          .expect(200)
+          .then(({ body }) => {
+            console.log(body);
+            return request
+              .delete(`/api/auth/users/${body._id}/roles/admin`)
+              .set('Authorization', adminUser.token)
+              .expect(200)
+              .then(({ body }) => {
+                expect(body.roles[0]).toBeUndefined;
               });
           });
       });
