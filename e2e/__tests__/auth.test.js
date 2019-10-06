@@ -133,8 +133,11 @@ describe('Auth Admin Users', () => {
         });
       })
       .then(() => {
-        return Promise.all([signinAdminUser(), signupUser(louslyOlUser)]).then(
-          ([adminUser, user]) => {
+        return Promise.all([
+          signinAdminUser(),
+          signupUser(louslyOlUser)
+        ])
+          .then(([adminUser, user]) => {
             return request
               .put(`/api/auth/users/${user._id}/roles/admin`)
               .set('Authorization', adminUser.token)
@@ -143,7 +146,7 @@ describe('Auth Admin Users', () => {
                 expect(body.roles[0]).toBe('admin');
               });
           }
-        );
+          );
       });
   });
 
@@ -224,15 +227,20 @@ describe('Auth Admin Gets All Users', () => {
             .expect(200)
             .then(({ body }) => {
               expect(body.length).toBe(4);
-              expect(body[0]).toMatchInlineSnapshot(`
+              expect(body[0]).toMatchInlineSnapshot(
+                {
+                  _id: expect.any(String)
+                },
+                `
                 Object {
-                  "_id": "5d9a3e7f0fb22c1fdd5e9a6e",
+                  "_id": Any<String>,
                   "email": "alex@hellohello.com",
                   "roles": Array [
                     "admin",
                   ],
                 }
-              `);
+              `
+              );
             });
         });
       });
