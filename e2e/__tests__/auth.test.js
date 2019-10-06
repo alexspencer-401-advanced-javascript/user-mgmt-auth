@@ -153,24 +153,79 @@ describe('Auth Admin Users', () => {
   };
 
   it('allows admin to take away user admin status', () => {
-    return Promise.all([
-      signinAdminUser(),
-      signupUser(newUser)
-    ])
-      .then(([adminUser, newUser]) => {
-        console.log(adminUser, newUser);
+    return Promise.all([signinAdminUser(), signupUser(newUser)]).then(
+      ([adminUser, newUser]) => {
         return request
           .put(`/api/auth/users/${newUser._id}/roles/admin`)
           .set('Authorization', adminUser.token)
           .expect(200)
           .then(({ body }) => {
-            console.log(body);
             return request
               .delete(`/api/auth/users/${body._id}/roles/admin`)
               .set('Authorization', adminUser.token)
               .expect(200)
               .then(({ body }) => {
                 expect(body.roles[0]).toBeUndefined;
+              });
+          });
+      }
+    );
+  });
+});
+
+describe('Auth Admin Gets All Users', () => {
+
+  beforeEach(() => dropCollection('users'));
+
+  const adminTest = {
+    email: 'alex@hellohello.com',
+    password: 'abc123'
+  };
+
+  function signinAdminUser(admin = adminTest) {
+    return request
+      .post('/api/auth/signin')
+      .send(admin)
+      .expect(200)
+      .then(({ body }) => body);
+  }
+
+  const newUser1 = {
+    email: 'user1@user1.com',
+    password: 'abc123'
+  };
+  const newUser2 = {
+    email: 'user2@user2.com',
+    password: 'abc123'
+  };
+  const newUser3 = {
+    email: 'user3@user3.com',
+    password: 'abc123'
+  };
+
+  it('gets the _id, email, and roles of all users', () => {
+    return signupUser(adminTest)
+      .then(user => {
+        return User.updateById(user._id, {
+          $addToSet: {
+            roles: 'admin'
+          }
+        });
+      })
+      .then(() => {
+        return Promise.all([
+          signinAdminUser(),
+          signupUser(newUser1),
+          signupUser(newUser2),
+          signupUser(newUser3),
+        ])
+          .then(([adminUser]) => {
+            return request
+              .get('/api/auth/users')
+              .set('Authorization', adminUser.token)
+              .expect(200)
+              .then(({ body }) => {
+                expect(body.length).toBe(4);
               });
           });
       });
