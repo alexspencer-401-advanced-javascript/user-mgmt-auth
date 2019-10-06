@@ -174,7 +174,6 @@ describe('Auth Admin Users', () => {
 });
 
 describe('Auth Admin Gets All Users', () => {
-
   beforeEach(() => dropCollection('users'));
 
   const adminTest = {
@@ -217,18 +216,25 @@ describe('Auth Admin Gets All Users', () => {
           signinAdminUser(),
           signupUser(newUser1),
           signupUser(newUser2),
-          signupUser(newUser3),
-        ])
-          .then(([adminUser]) => {
-            return request
-              .get('/api/auth/users')
-              .set('Authorization', adminUser.token)
-              .expect(200)
-              .then(({ body }) => {
-                console.log(body);
-                expect(body.length).toBe(4);
-              });
-          });
+          signupUser(newUser3)
+        ]).then(([adminUser]) => {
+          return request
+            .get('/api/auth/users')
+            .set('Authorization', adminUser.token)
+            .expect(200)
+            .then(({ body }) => {
+              expect(body.length).toBe(4);
+              expect(body[0]).toMatchInlineSnapshot(`
+                Object {
+                  "_id": "5d9a3e7f0fb22c1fdd5e9a6e",
+                  "email": "alex@hellohello.com",
+                  "roles": Array [
+                    "admin",
+                  ],
+                }
+              `);
+            });
+        });
       });
   });
 });
