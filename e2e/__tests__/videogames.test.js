@@ -105,26 +105,73 @@ describe('Videogame App', () => {
           .then(() => {
             return signinAdminUser()
               .then(admin => {
-                // console.log(admin);
                 return request
                   .post('/api/videogames')
                   .set('Authorization', admin.token)
                   .send(videogame3)
                   .expect(200)
-                  .then(({ body }) => {
-                    console.log(body);
+                  .then(({ body }) => body)
+                  .then(videogame => {
                     return request
-                      .put(`/api/videogames/${body._id}`)
+                      .put(`/api/videogames/${videogame._id}`)
                       .set('Authorization', admin.token)
                       .send({ yearReleased: 2025 })
                       .expect(200)
                       .then(({ body }) => {
-                        console.log(body);
+                        expect(body.yearReleased).toBe(2025);
                       });
+                  });
+              });
+          });
+      });
+  });
+  it('gets can be done by any authorized user', () => {
+    return signupUser(normalUser)
+      .then(() => {
+        return signupUser(adminTest)
+          .then(user => {
+            return User.updateById(user._id, {
+              $addToSet: {
+                roles: 'admin'
+              }
+            });
+          })
+          .then(() => {
+            return signinAdminUser()
+              .then(admin => {
+                return request
+                  .post('/api/videogames')
+                  .set('Authorization', admin.token)
+                  .send(videogame3)
+                  .expect(200)
+                  .then(() => {
+                    return request
+                      .post('/api/videogames')
+                      .set('Authorization', admin.token)
+                      .send(videogame3)
+                      .expect(200)
+                      .then(() => {
+                        return signinAdminUser(normalUser)
+                          .then(user => {
+                            return request
+                              .get('/api/videogames')
+                              .set('Authorization', user.token)
+                              .expect(200)
+                              .then(({ body }) => {
+                                expect(body.length).toBe(2);
+                              });
 
+                          });
+                      });
                   });
               });
           });
       });
   });
 });
+
+
+
+
+
+
