@@ -168,6 +168,45 @@ describe('Videogame App', () => {
           });
       });
   });
+  it('deletes a movie, but only those with admin access', () => {
+    return signupUser(normalUser)
+      .then(() => {
+        return signupUser(adminTest)
+          .then(user => {
+            return User.updateById(user._id, {
+              $addToSet: {
+                roles: 'admin'
+              }
+            });
+          })
+          .then(() => {
+            return signinAdminUser()
+              .then(admin => {
+                return request
+                  .post('/api/videogames')
+                  .set('Authorization', admin.token)
+                  .send(videogame3)
+                  .expect(200)
+                  .then(({ body }) => {
+                    return request
+                      .delete(`/api/videogames/${body._id}`)
+                      .set('Authorization', admin.token)
+                      .expect(200)
+                      .then(() => {
+                        return request
+                          .get('/api/videogames')
+                          .set('Authorization', admin.token)
+                          .expect(200)
+                          .then(({ body }) => {
+                            expect(body).toEqual([]);
+                          });
+                      });
+                  });
+              });
+          });
+      });
+  });
+
 });
 
 
