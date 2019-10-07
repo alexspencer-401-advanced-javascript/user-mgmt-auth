@@ -86,23 +86,44 @@ describe('Videogame App', () => {
       });
   });
 
-  it('only allows those with admin access to put', () => {
-    return signupUser(adminTest)
-      .then(user => {
-        return User.updateById(user._id, {
-          $addToSet: {
-            roles: 'admin'
-          }
-        });
-      })
-      .then(() => {
-        return Promise.all([
-          signinAdminUser()
-        ])
-          .then(([admin]) => {
-            console.log(admin);
-            return request;
+  const videogame3 = {
+    title: 'Battlefield',
+    yearReleased: 2016
+  };
 
+  it('only allows those with admin access to put', () => {
+    return signupUser(normalUser)
+      .then(() => {
+        return signupUser(adminTest)
+          .then(user => {
+            return User.updateById(user._id, {
+              $addToSet: {
+                roles: 'admin'
+              }
+            });
+          })
+          .then(() => {
+            return signinAdminUser()
+              .then(admin => {
+                // console.log(admin);
+                return request
+                  .post('/api/videogames')
+                  .set('Authorization', admin.token)
+                  .send(videogame3)
+                  .expect(200)
+                  .then(({ body }) => {
+                    console.log(body);
+                    return request
+                      .put(`/api/videogames/${body._id}`)
+                      .set('Authorization', admin.token)
+                      .send({ yearReleased: 2025 })
+                      .expect(200)
+                      .then(({ body }) => {
+                        console.log(body);
+                      });
+
+                  });
+              });
           });
       });
   });
